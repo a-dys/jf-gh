@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkjeeflo_static_site=self.webpackChunkjeeflo_static_site||[]).push([[453],{731:function(e,t,s){s.r(t);var a=s(6540),f=s(4794);t.default=()=>((0,a.useEffect)((()=>{(0,f.navigate)("/")}),[]),null)}}]);
+//# sourceMappingURL=component---src-pages-404-tsx-70837230567cf3dc5dfa.js.map

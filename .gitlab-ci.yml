@@ -1,0 +1,55 @@
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  S3_PROD: www.jeeflo.com
+  CLOUDFRONT_DISTRIBUTION_PROD: E1KINA5DQ26L3C
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+stages:
+  - test_and_build
+  - deploy_to_production
+
+build:
+  stage: test_and_build
+  image: node:20.9.0-alpine
+  cache:
+    paths:
+      - .npm/
+      - .node_modules/
+  artifacts:
+    expire_in: 3 days
+    paths:
+      - public/
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_OPEN_MERGE_REQUESTS
+      when: manual
+    - if: $CI_COMMIT_BRANCH == 'main'
+      when: on_success
+
+deploy_prod:
+  stage: deploy_to_production
+  image: python:3.10-alpine
+  cache:
+    paths:
+      - .cache/pip
+  environment:
+    name: production
+  only:
+    - main
+  when: manual
+  dependencies:
+    - build
+  before_script:
+    - pip install awscli
+  script:
+    - cd public; aws s3 sync . s3://${S3_PROD} --delete
+    - aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_PROD} --paths "/*"
